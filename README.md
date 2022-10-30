@@ -25,9 +25,10 @@ The first route is `/login` and the second route is `/refreshToken`.
 The application will verify if the cookie exists and / or is within the expiry time.
 
 `Go modules used`
-
-    github.com/dgrijalva/jwt-go v3.2.0+incompatible
-
-	github.com/google/uuid v1.3.0
-
-	github.com/gorilla/mux v1.8.0
+```
+go get github.com/gorilla/mux
+go get github.com/jinzhu/gorm
+go get github.com/lib/pq
+go get golang.org/x/crypto/bcrypt
+go get github.com/golang-jwt/jwt
+```

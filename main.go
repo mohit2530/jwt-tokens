@@ -1,20 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/mohit2530/jwt-tokens/handlers"
+	"github.com/mohit2530/jwt-tokens/api"
 )
 
 func main() {
 
 	router := mux.NewRouter()
+	router.HandleFunc("/login", api.Login).Methods(http.MethodPost)
 
-	router.HandleFunc("/login", handlers.LogIn).Methods(http.MethodPost)
-	router.HandleFunc("/refreshToken", handlers.RefreshToken).Methods(http.MethodGet)
-
-	fmt.Printf("server is running ... ")
-	http.ListenAndServe(":8000", router)
+	log.Printf("application is up and running ")
+	http.ListenAndServe(":8080", router)
 }
+
