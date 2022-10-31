@@ -1,9 +1,9 @@
 package types
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -19,28 +19,6 @@ type Credentials struct {
 type Claims struct {
 	Username string `json:"username"`
 	jwt.StandardClaims
-}
-
-// initialize to create token with claims
-func (c *Claims) initialize(credentials Credentials, expiryTime time.Time) (string, error) {
-	c.Username = credentials.Username
-	c.StandardClaims = jwt.StandardClaims{
-		ExpiresAt: expiryTime.Unix(),
-	}
-
-	// sign with claims and signing method
-	// using uuid as a jwtKey to obscure the secret key
-	// need a way to use this behind the scenes
-	var jwtKey = []byte(uuid.New().String())
-	secretKey := fmt.Sprintf("%x", jwtKey)
-	fmt.Printf("the secret key - %+v", secretKey)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	tokenStr, err := token.SignedString(jwtKey)
-	if err != nil {
-		log.Printf("unable to decode token. err - %+v", err)
-		return "", err
-	}
-	return tokenStr, nil
 }
 
 // createJwt creates a jwt token for a valid user
@@ -62,5 +40,37 @@ func CreateJwt(w http.ResponseWriter, r *http.Request, creds Credentials) {
 		Expires: expTime,
 	})
 	w.WriteHeader(http.StatusOK)
-	log.Printf("generated json web token - %+v", tokenStr)
+}
+
+// initialize to create token with claims
+func (c *Claims) initialize(credentials Credentials, expiryTime time.Time) (string, error) {
+	c.Username = credentials.Username
+	c.StandardClaims = jwt.StandardClaims{
+		ExpiresAt: expiryTime.Unix(),
+	}
+
+	// sign with claims and signing method
+	// using uuid as a jwtKey to obscure the secret key
+	// need a way to use this behind the scenes
+	var jwtKey = []byte(uuid.New().String())
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	tokenStr, err := token.SignedString(jwtKey)
+	if err != nil {
+		log.Printf("unable to decode token. err - %+v", err)
+		return "", err
+	}
+	saveTokenToLogFile(jwtKey)
+	return tokenStr, nil
+}
+
+func saveTokenToLogFile(jwtKey []byte) {
+	file, err := os.OpenFile("log", os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("failed to create file, license - %+v", jwtKey)
+		return
+	}
+
+	defer file.Close()
+	log.SetOutput(file)
+	log.Printf(" generated secret key -  %+v", string(jwtKey))
 }

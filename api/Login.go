@@ -5,14 +5,15 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/mohit2530/jwt-tokens/types"
 )
 
+// Login method will try to validate username / password and create JWT
 func Login(w http.ResponseWriter, r *http.Request) {
 
-	var creds types.Credentials
-	creds, err := verifyUser(w, r, creds)
+	creds, err := verifyUser(w, r)
 	if err != nil {
 		log.Printf("unable to decode the request body. err - %+v", err)
 		w.Header().Add("Content-Type", "application/json")
@@ -22,9 +23,29 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	types.CreateJwt(w, r, creds)
 }
 
-// verifyUser method verify if the user has the correct password or not
-func verifyUser(w http.ResponseWriter, r *http.Request, credentials types.Credentials) (types.Credentials, error) {
+// RefreshToken method will try to refresh the token and create JWT
+func RefreshToken(w http.ResponseWriter, r *http.Request) {
 
+	creds, err := verifyUser(w, r)
+	if err != nil {
+		log.Printf("unable to decode the request body. err - %+v", err)
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err = refreshToken(w, r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	types.CreateJwt(w, r, creds)
+}
+
+// verifyUser method verify if the user has the correct password or not
+func verifyUser(w http.ResponseWriter, r *http.Request) (types.Credentials, error) {
+
+	var credentials types.Credentials
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		log.Printf("unable to decode the request body. err - %+v", err)
@@ -47,4 +68,18 @@ func verifyUser(w http.ResponseWriter, r *http.Request, credentials types.Creden
 	}
 
 	return credentials, nil
+}
+
+// refreshToken method to refresh if the token is under 30 seconds
+func refreshToken(w http.ResponseWriter, r *http.Request) error {
+
+	claims := &types.Claims{}
+	// control jwt token; prevent refresh if > 30 seconds of expiry
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		return errors.New(" subject within jwt time limit")
+	}
+	// adds extra seven minutes
+	expTime := time.Now().Add(7 * time.Minute)
+	claims.ExpiresAt = expTime.Unix()
+	return nil
 }

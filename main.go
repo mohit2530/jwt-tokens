@@ -11,9 +11,9 @@ import (
 func main() {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/login", api.Login).Methods(http.MethodPost)
+	router.HandleFunc("/validate", api.Login).Methods(http.MethodPost)
+	router.HandleFunc("/refreshToken", api.RefreshToken).Methods(http.MethodPost)
 
-	log.Printf("application is up and running ")
-	http.ListenAndServe(":8080", router)
+	log.Printf("secure is warming up ")
+	http.ListenAndServe(":3007", router)
 }
-
